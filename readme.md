@@ -68,8 +68,10 @@ The frontend and backend are separate applications in `/client` and `/server`.
 │   └── package.json
 ├── .env.example
 ├── plan.md
-└── readme.md
+└── README.md
 ```
+
+The initial React frontend is implemented in `client/src` with a zinc-and-white visual system, responsive layouts, reusable cards and metrics, and route shells for student, owner, and admin experiences.
 
 ## Prerequisites
 
@@ -150,6 +152,8 @@ Start the frontend in another terminal:
 cd client
 npm run dev
 ```
+
+The client currently includes mock data so the interface can be reviewed before the Express API is connected. Replace the mock services with Axios calls to `VITE_API_URL` as backend endpoints are implemented.
 
 The default development URLs are:
 

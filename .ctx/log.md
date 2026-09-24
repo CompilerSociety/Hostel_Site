@@ -9,3 +9,11 @@ Updated `plan.md` with the complete MERN hostel application requirements from th
 ## 2026-09-24T00:00:00+05:00
 
 Created `readme.md` documenting the MERN stack, project structure, setup, environment variables, MongoDB and Cloudinary configuration, demo data, authentication, REST API, Socket.IO chat, routes, UI standards, and quality checklist.
+
+## 2026-09-24T00:00:00+05:00
+
+Checked Git state after the user reported the README was missing. The content is present locally as a modification to the tracked `README.md`; `main` matches `origin/main`, so the README has not been committed or pushed yet.
+
+## 2026-09-24T00:00:00+05:00
+
+Scaffolded the React/Vite frontend in `client/` with Tailwind CSS, a light zinc-and-white UI, responsive navigation, landing/search/messages/owner/admin screens, and reusable UI primitives. Installed dependencies and verified `npm run build` passes.
