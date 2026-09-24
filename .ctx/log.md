@@ -17,3 +17,7 @@ Checked Git state after the user reported the README was missing. The content is
 ## 2026-09-24T00:00:00+05:00
 
 Scaffolded the React/Vite frontend in `client/` with Tailwind CSS, a light zinc-and-white UI, responsive navigation, landing/search/messages/owner/admin screens, and reusable UI primitives. Installed dependencies and verified `npm run build` passes.
+
+## 2026-09-24T18:39:04+05:00
+
+Prepared the React frontend for push to `origin/main`. Found duplicate tracked README paths caused by Windows case-insensitivity; normalized the repository to keep only canonical `README.md` with the complete documentation.
