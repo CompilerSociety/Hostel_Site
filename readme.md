@@ -1,5 +1,7 @@
 # HostelHub
 
+> Backend implementation and authoritative setup/API instructions: [server/README.md](server/README.md). One shared Express API serves both branch frontends. Existing React screens still use mock data; API integration is the next phase. Demo passwords are supplied through `SEED_PASSWORD`, not the example credentials below.
+
 HostelHub is a full-stack hostel discovery and management platform built with the MERN stack. Students can search, filter, save, and message hostel owners. Owners can publish and manage listings, while administrators review listings, manage users, and monitor platform analytics.
 
 ## Owner portal on `master`
