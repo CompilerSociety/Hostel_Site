@@ -1,0 +1,50 @@
+import mongoose from 'mongoose';
+const { Schema, model } = mongoose;
+const ref = (name) => ({ type: Schema.Types.ObjectId, ref: name, required: true });
+
+const userSchema = new Schema({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true, select: false },
+  role: { type: String, enum: ['STUDENT', 'OWNER', 'ADMIN'], required: true },
+  active: { type: Boolean, default: true },
+  favorites: [{ type: Schema.Types.ObjectId, ref: 'Hostel' }],
+}, { timestamps: true });
+export const User = model('User', userSchema);
+
+const hostelSchema = new Schema({
+  owner: ref('User'), name: { type: String, required: true },
+  description: { type: String, required: true }, city: { type: String, required: true },
+  address: { type: String, required: true }, price: { type: Number, required: true, min: 0 },
+  beds: { type: Number, required: true, min: 0 },
+  gender: { type: String, enum: ['MALE', 'FEMALE', 'ANY'], default: 'ANY' },
+  amenities: [String],
+  images: [{ _id: false, publicId: String, url: String }], coverImage: String,
+  status: { type: String, enum: ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'], default: 'DRAFT' },
+  moderationReason: String, moderatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  moderatedAt: Date, deletedAt: Date,
+}, { timestamps: true, optimisticConcurrency: true });
+hostelSchema.index({ status: 1, city: 1, price: 1 });
+hostelSchema.index({ owner: 1, createdAt: -1 });
+export const Hostel = model('Hostel', hostelSchema);
+
+const conversationSchema = new Schema({
+  hostel: ref('Hostel'), student: ref('User'), owner: ref('User'),
+}, { timestamps: true });
+conversationSchema.index({ hostel: 1, student: 1 }, { unique: true });
+conversationSchema.index({ owner: 1, updatedAt: -1 });
+export const Conversation = model('Conversation', conversationSchema);
+
+const messageSchema = new Schema({
+  conversation: ref('Conversation'), sender: ref('User'), recipient: ref('User'),
+  text: { type: String, required: true, maxlength: 4000 }, readAt: Date,
+}, { timestamps: true });
+messageSchema.index({ conversation: 1, _id: -1 });
+messageSchema.index({ recipient: 1, readAt: 1 });
+export const Message = model('Message', messageSchema);
+
+const sessionSchema = new Schema({
+  _id: String, user: ref('User'), expiresAt: { type: Date, required: true },
+});
+sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+export const Session = model('Session', sessionSchema);

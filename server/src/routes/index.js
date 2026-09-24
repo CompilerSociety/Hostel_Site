@@ -1,0 +1,57 @@
+import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
+import multer from 'multer';
+import { z } from 'zod';
+import { authenticate, roles } from '../middleware/auth.js';
+import { id, pagination, validate } from '../middleware/http.js';
+import { publicUser } from '../services/auth.js';
+import * as auth from '../controllers/auth.js';
+import * as hostels from '../controllers/hostels.js';
+import * as images from '../controllers/images.js';
+import * as admin from '../controllers/admin.js';
+import * as chat from '../controllers/chat.js';
+
+export const router = Router();
+const text = max => z.string().trim().min(1).max(max);
+const email = z.email().max(254).transform(value => value.toLowerCase());
+const password = z.string().min(10).max(72).refine(value => Buffer.byteLength(value, 'utf8') <= 72, 'Password must be at most 72 bytes');
+const authLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { message: 'Too many authentication attempts' } } });
+router.post('/auth/register', authLimit, validate(z.object({ name: text(100), email, password, role: z.enum(['STUDENT', 'OWNER']).default('STUDENT') }).strict()), auth.register);
+router.post('/auth/login', authLimit, validate(z.object({ email, password: z.string().min(1).max(200) }).strict()), auth.login);
+router.post('/auth/logout', authenticate, auth.logout);
+router.get('/auth/me', authenticate, (req, res) => res.json({ data: publicUser(req.user) }));
+router.patch('/auth/me', authenticate, validate(z.object({ name: text(100) }).strict()), auth.profile);
+
+const hostelSchema = z.object({ name: text(150), description: text(5000), city: text(100), address: text(300), price: z.number().min(0).max(10000000), beds: z.number().int().min(0).max(10000), gender: z.enum(['MALE', 'FEMALE', 'ANY']).default('ANY'), amenities: z.array(text(80)).max(30).default([]) }).strict();
+const owner = [authenticate, roles('OWNER')];
+const student = [authenticate, roles('STUDENT')];
+const adminOnly = [authenticate, roles('ADMIN')];
+const validId = validate(z.object({ id }), 'params');
+router.get('/hostels', validate(pagination.extend({ city: text(100).optional(), q: text(100).optional(), gender: z.enum(['MALE', 'FEMALE', 'ANY']).optional(), minPrice: z.coerce.number().min(0).optional(), maxPrice: z.coerce.number().min(0).optional(), sort: z.enum(['newest', 'priceAsc', 'priceDesc']).default('newest') }).refine(value => value.minPrice === undefined || value.maxPrice === undefined || value.minPrice <= value.maxPrice, 'Invalid price range'), 'query'), hostels.list);
+router.get('/owner/hostels', ...owner, validate(pagination, 'query'), hostels.mine);
+router.get('/favorites', ...student, validate(pagination, 'query'), hostels.favorites);
+router.get('/hostels/:id', validId, hostels.detail);
+router.post('/hostels', ...owner, validate(hostelSchema), hostels.create);
+router.put('/hostels/:id', ...owner, validId, validate(hostelSchema), hostels.update);
+router.delete('/hostels/:id', ...owner, validId, hostels.remove);
+router.post('/hostels/:id/submit', ...owner, validId, hostels.submit);
+router.post('/hostels/:id/favorite', ...student, validId, hostels.favorite);
+router.delete('/hostels/:id/favorite', ...student, validId, hostels.favorite);
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 10, fields: 0 } });
+router.post('/hostels/:id/images', ...owner, validId, upload.array('images', 10), images.upload);
+router.put('/hostels/:id/images', ...owner, validId, validate(z.object({ publicIds: z.array(text(200)).min(1).max(10), coverImage: text(200) }).strict()), images.arrange);
+router.delete('/hostels/:id/images', ...owner, validId, validate(z.object({ publicId: text(200) }).strict()), images.remove);
+
+router.get('/admin/hostels', ...adminOnly, validate(pagination.extend({ status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED']).optional() }), 'query'), admin.hostels);
+router.patch('/admin/hostels/:id/:action', ...adminOnly, validate(z.object({ id, action: z.enum(['approve', 'reject', 'suspend', 'restore']) }), 'params'), validate(z.object({ reason: text(1000).optional() }).strict()), admin.moderate);
+router.get('/admin/users', ...adminOnly, validate(pagination, 'query'), admin.users);
+router.patch('/admin/users/:id', ...adminOnly, validId, validate(z.object({ active: z.boolean() }).strict()), admin.setActive);
+router.get('/admin/analytics', ...adminOnly, admin.analytics);
+
+router.use('/conversations', authenticate, roles('STUDENT', 'OWNER'));
+router.get('/conversations', validate(pagination, 'query'), chat.list);
+router.post('/conversations', roles('STUDENT'), validate(z.object({ hostelId: id }).strict()), chat.create);
+router.get('/conversations/:id/messages', validId, validate(z.object({ before: id.optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }), 'query'), chat.messages);
+export const messageSchema = z.object({ text: text(4000) }).strict();
+router.post('/conversations/:id/messages', validId, validate(messageSchema), chat.send);
+router.patch('/conversations/:id/read', validId, validate(z.object({ through: id }).strict()), chat.read);
