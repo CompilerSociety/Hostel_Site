@@ -2,6 +2,18 @@
 
 HostelHub is a full-stack hostel discovery and management platform built with the MERN stack. Students can search, filter, save, and message hostel owners. Owners can publish and manage listings, while administrators review listings, manage users, and monitor platform analytics.
 
+## Owner portal on `master`
+
+The `master` branch contains the standalone hostel-owner portal in `/client`. It includes an owner dashboard, listing and amenity management, image organization, approval submission status, student messaging, subscription details, and owner profile management.
+
+Run it locally with:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
 ## Core user experiences
 
 ### Student
